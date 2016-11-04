@@ -1,0 +1,89 @@
+---
+title: "Machine Learning - Peer Assesment"
+author: "Carlos Figueroa"
+date: "31 de octubre de 2016"
+output: html_document
+---
+  
+##Intro
+  
+The main idea is to predict the activitie that is being performed bya  group of people by using the data provided by activity monitors
+
+## Main Procedure
+
+Lets start by setting the working directory, loading the data, preeeliminar analysis, etc.
+
+```{r results='hide', message=FALSE, warning=FALSE}
+library(knitr)
+library(caret)
+library(e1071)
+library(rpart)
+library(rattle)
+library(rpart.plot)
+```
+
+```{r}
+setwd("C:\\Users\\figuca02\\datasciencecoursera\\Machine_Learning_Submission")
+training<-read.csv("pml-training.csv")
+testing<-read.csv("pml-testing.csv")
+```
+
+Creating partition and the subsequent training and testing sets:
+  
+```{r}
+inTrain <-createDataPartition(training$classe, p=0.7, list=FALSE)
+trainset<-training[inTrain, ]
+testset<-training[-inTrain, ]
+```
+
+Seems there are a lot of variables, some useless like identifiers, so in order to take the most relevant ones I will remove non zero variance and change NA to 0 and remove the first variables which are only identifiers of time and subjet:
+  
+```{r}
+trainset[is.na(trainset)]<-0
+testset[is.na(testset)]<-0
+nonzerovar<-nearZeroVar(trainset)
+trainingset<-trainset[,-nonzerovar]
+testingset<-testset[,-nonzerovar]
+trainingset<-trainingset[,-(1:5)]
+testingset<-testingset[,-(1:5)]
+names(trainingset)
+names(testingset)
+```
+
+
+## Prediction
+
+Now, with the remaining 54 variables I will try a simple classification tree prediction:
+  
+```{r}
+set.seed(1234)
+modelfit<-rpart(classe~., data=trainingset, method="class")
+fancyRpartPlot(modelfit)
+```
+
+
+Predicting on the training dataset:
+  
+```{r}
+set.seed(1234)
+predictmodelfit<-predict(modelfit, data=trainingset, type="class")
+confusionMatrix(predictmodelfit,trainingset$classe)
+```
+
+
+Predicting on the test set:
+  
+```{r}
+set.seed(1234)
+predicttest<-predict(modelfit, newdata=testingset, type="class")
+confusionMatrix(predicttest, testingset$classe)
+```
+
+
+Now, for the test:
+  
+```{r}
+set.seed(1234)
+predictnewtest<-predict(modelfit, newdata=testing)
+predictnewtest
+```
